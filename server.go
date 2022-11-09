@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	// jaeger config
 	cfg := jaegercfg.Configuration{
 		ServiceName: "test-app",
 		Sampler: &jaegercfg.SamplerConfig{
@@ -35,12 +36,16 @@ func main() {
 	}
 	opentracing.SetGlobalTracer(tracer)
 	defer closer.Close()
+	// end of jaeger setting
 
 	r := gin.Default()
 	r.GET("/hi", func(ctx *gin.Context) {
+		// create the span
 		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(ctx.Request.Header))
 		serverSpan := tracer.StartSpan("server say hi", ext.RPCServerOption(spanCtx))
+		// this finish() is critical
 		defer serverSpan.Finish()
+		// end
 
 		ctx.JSON(http.StatusOK, gin.H{"msg": "Up and Running..."})
 	})
